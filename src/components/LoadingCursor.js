@@ -1,7 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
-// Keyframe animation for the blinking cursor
 const blinkAnimation = keyframes`
   0% {
     opacity: 0;
@@ -14,7 +13,6 @@ const blinkAnimation = keyframes`
   }
 `;
 
-// Styled component for the blinking cursor
 const Cursor = styled.span`
 	display: inline-block;
 	width: 0.8em;
@@ -23,8 +21,7 @@ const Cursor = styled.span`
 	animation: ${blinkAnimation} 1s infinite;
 `;
 
-// React component for the loading indicator
-const LoadingIndicator = () => {
+const LoadingCursor = () => {
 	return (
 		<div>
 			<Cursor />
@@ -32,4 +29,4 @@ const LoadingIndicator = () => {
 	);
 };
 
-export default LoadingIndicator;
+export default LoadingCursor;
