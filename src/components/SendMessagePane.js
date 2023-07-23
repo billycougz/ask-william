@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { askQuestion } from '../api';
 
@@ -14,26 +14,18 @@ const FixedContainer = styled.div`
 	box-sizing: border-box;
 `;
 
-export default function SendMessagePane({ selectedFiles, isLoading, setIsLoading, updateConversation }) {
+export default function SendMessagePane({ id, isLoading, setIsLoading, updateConversation }) {
 	const [question, setQuestion] = useState('');
-
-	const convertFileToBase64 = (file) => {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.readAsDataURL(file);
-			reader.onload = () => resolve(reader.result.split(',')[1]);
-			reader.onerror = (error) => reject(error);
-		});
-	};
+	const myRef = useRef(null);
 
 	const askWilliam = async () => {
-		if (selectedFiles) {
+		if (question) {
 			setIsLoading(true);
-			const base64Array = await Promise.all(selectedFiles.map(convertFileToBase64));
-			const { answer, error } = await askQuestion({ encodeFiles: base64Array.join(), question });
+			const { answer, error } = await askQuestion({ id, question });
 			if (answer) {
 				updateConversation({ question, answer });
 				setQuestion('');
+				// ToDo myRef.current.focus();
 			} else {
 				alert(error);
 			}
@@ -51,14 +43,15 @@ export default function SendMessagePane({ selectedFiles, isLoading, setIsLoading
 	return (
 		<FixedContainer>
 			<textarea
+				ref={myRef}
 				style={{ width: 'calc(100% - 69px)' }}
-				placeholder={selectedFiles ? 'Ask a question' : 'Start by uploading a document'}
+				placeholder={id ? 'Ask a question' : 'Start by uploading a document'}
 				onChange={(e) => setQuestion(e.target.value)}
-				disabled={!Boolean(selectedFiles) || isLoading}
+				disabled={!Boolean(id) || isLoading}
 				value={question}
 				onKeyDown={handleKeyDown}
 			></textarea>
-			<button onClick={askWilliam} disabled={!selectedFiles || isLoading}>
+			<button onClick={askWilliam} disabled={!question || isLoading}>
 				→
 			</button>
 		</FixedContainer>

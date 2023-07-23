@@ -1,39 +1,106 @@
 import React, { useState } from 'react';
-import IntroPane from './components/IntroPane';
-import UploadFilePane from './components/UploadFilePane';
+import styled from 'styled-components';
+import NewConversationPane from './components/NewConversationPane';
 import ConversationPane from './components/ConversationPane';
 import SendMessagePane from './components/SendMessagePane';
 import { updateStoredConversations } from './storage';
+import HistoryPane from './components/HistoryPane';
+
+const AppContainer = styled.div`
+	display: flex;
+`;
+
+const SideContainer = styled.nav`
+	@media only screen and (max-width: 400px) {
+		display: none;
+	}
+	width: 300px;
+	margin: 1em;
+`;
+
+const MainContainer = styled.main`
+	@media only screen and (min-width: 401px) {
+		width: calc(100vw - 300px);
+	}
+	@media only screen and (max-width: 400px) {
+		width: 100%;
+	}
+	margin: auto 1em;
+`;
+
+const MainHeader = styled.div`
+	display: flex;
+	justify-content: center;
+	gap: 1em;
+	margin: 1em 0;
+`;
+
+const MainContent = styled.div`
+	height: calc(100vh - 50px);
+	overflow: scroll;
+`;
 
 export default function App() {
-	const [selectedFiles, setSelectedFiles] = useState(null);
+	const [{ id, name, exchanges }, setConversation] = useState({ id: null, exchanges: [] });
 	const [isLoading, setIsLoading] = useState(false);
-	const [{ id, exchanges }, setConversation] = useState({ id: null, exchanges: [] });
 
 	const updateConversation = (newExchange) => {
 		const updatedConversation = {
-			id: id || Date.now(),
+			id,
+			name,
 			exchanges: [...exchanges, newExchange],
 		};
 		setConversation(updatedConversation);
 		updateStoredConversations(updatedConversation);
 	};
 
+	const handleConversationStarted = ({ id, summary, name }) => {
+		const conversation = {
+			id,
+			name,
+			exchanges: [
+				{
+					question: 'You started a new conversation.',
+					answer: summary,
+				},
+			],
+		};
+		setConversation(conversation);
+		updateStoredConversations(conversation);
+	};
+
+	const handleConversationSelected = (selectedConversation) => {
+		setConversation(selectedConversation || { id: null, exchanges: [] });
+	};
+
 	return (
-		<div style={{ margin: '1em', marginBottom: '100px' }}>
-			<IntroPane selectedFiles={selectedFiles} />
+		<AppContainer>
+			<SideContainer>
+				<HistoryPane onConversationSelected={handleConversationSelected} />
+			</SideContainer>
 
-			<UploadFilePane {...{ selectedFiles, setSelectedFiles }} />
+			<MainContainer>
+				{id && (
+					<MainHeader>
+						<strong>{name}</strong>
+						<button>Show Original</button>
+						<button>Show Extract</button>
+					</MainHeader>
+				)}
+				<MainContent>
+					{!id && <NewConversationPane onConversationStarted={handleConversationStarted} />}
 
-			{selectedFiles && !exchanges.length && (
-				<p style={{ marginTop: '2em', textAlign: 'center' }}>
-					Ask a question or leave the box empty to request a general summary.
-				</p>
-			)}
+					{id && !exchanges.length && (
+						<p style={{ marginTop: '2em', textAlign: 'center' }}>
+							Ask a question or leave the box empty to request a general summary.
+						</p>
+					)}
 
-			{Boolean(exchanges.length) && <ConversationPane {...{ exchanges, isLoading }} />}
+					{Boolean(exchanges.length) && <ConversationPane {...{ exchanges, isLoading }} />}
 
-			<SendMessagePane {...{ selectedFiles, isLoading, setIsLoading, updateConversation }} />
-		</div>
+					<SendMessagePane {...{ id, isLoading, setIsLoading, updateConversation }} />
+				</MainContent>
+			</MainContainer>
+		</AppContainer>
 	);
 }
