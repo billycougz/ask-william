@@ -15,6 +15,7 @@ def main(question, extract_names):
         'Content-Type': 'application/json',
     }
 
+    # ToDo: Update this content
     contextMessage = {
         "role": "system",
         "content": "The context of this conversation is that a user has extracted text from a document with the intent of having you summarize or answer questions about the document."
@@ -24,6 +25,7 @@ def main(question, extract_names):
 
     # Fetch all JSON files from S3 in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
+        # ToDo: Need to handle failures, namely case when extract has not yet completed
         future_to_data = {
             executor.submit(fetch_json_from_s3, s3_client, bucket_name, extract_name): extract_name
             for extract_name in extract_names

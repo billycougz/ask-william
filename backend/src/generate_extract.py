@@ -2,7 +2,9 @@ import os
 import json
 import boto3
 
+# ToDo: Handle embedding/vector search, and/or token/length limiting?
 def main(object_key):
+    # ToDo: object_key coming in with source file types - need to convert to JSON?
     bucket_name = os.getenv('FILE_BUCKET_NAME')
     textract_client = boto3.client('textract')
     s3 = boto3.client('s3')

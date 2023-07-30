@@ -41,6 +41,7 @@ def main(filenames):
             except Exception as e:
                 presigned_urls[filename] = f"Error generating presigned URL: {e}"
 
+    # ToDo: Need to return UUID-based source filenames?
     return presigned_urls
     
 if __name__ == "__main__":
