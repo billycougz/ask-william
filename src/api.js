@@ -1,5 +1,11 @@
-const MOCK = true;
+import axios from 'axios';
 
+// Use to stub responses
+const __MOCK__ = true;
+
+const lambdaEndpoint = 'https://ce5siinwh3.execute-api.us-east-1.amazonaws.com/default/eli5ify';
+
+// Creates an async/await timeout
 function delay(ms) {
 	return new Promise((resolve) => {
 		setTimeout(() => {
@@ -8,57 +14,47 @@ function delay(ms) {
 	});
 }
 
-export async function askQuestion({ id, question }) {
-	if (MOCK) {
+export async function askQuestion({ filenames, question }) {
+	if (__MOCK__) {
 		await delay(500);
 		return { answer: 'Test' };
 	}
 	try {
-		const payload = {
-			id,
-			question,
-		};
-		const response = await fetch('https://ce5siinwh3.execute-api.us-east-1.amazonaws.com/default/eli5ify', {
-			method: 'POST',
-			body: JSON.stringify(payload),
-		});
-		const data = await response.json();
-		if (!response.ok || !data.summary) {
-			const message = typeof data === 'object' ? data.message : 'There was an error.';
-			return { error: message };
-		}
-		return { answer: data.summary };
+		const payload = { filenames, question };
+		const response = await axios.post(lambdaEndpoint, payload);
+		return { answer: response.data.summary };
 	} catch (e) {
 		return { error: e.message };
 	}
 }
 
-function uploadFileToS3() {}
-
-function pollForReadyDocument() {}
-
-export async function uploadAndSummarizeFiles() {
-	if (MOCK) {
+export async function uploadAndSummarizeFiles(files) {
+	if (__MOCK__) {
 		await delay(500);
 		return { id: Date.now(), summary: 'HELLO WORLD' };
 	}
+	try {
+		const filenames = files.map(({ name }) => name);
+		const { presignedUrls, sourceFilenames } = await createPresignedUrls(filenames);
+
+		// Upload files to S3
+		await Promise.all(
+			files.map(async (file, index) => {
+				const presignedUrl = presignedUrls[index];
+				await axios.put(presignedUrl, file);
+			})
+		);
+
+		const summary = await askQuestion({ sourceFilenames });
+		return { summary, sourceFilenames };
+	} catch (error) {
+		console.error(error);
+	}
 }
 
-// const handleFileUpload = () => {
-// 	if (selectedFile) {
-// 		axios
-// 			.put('PRESIGNED_URL', selectedFile, {
-// 				headers: {
-// 					'Content-Type': selectedFile.type,
-// 				},
-// 			})
-// 			.then((response) => {
-// 				// Handle successful upload response
-// 				console.log('Upload successful!', response);
-// 			})
-// 			.catch((error) => {
-// 				// Handle error during upload
-// 				console.error('Upload error:', error);
-// 			});
-// 	}
-// };
+async function createPresignedUrls(filenames) {
+	// ToDo: Check params and response structure
+	// Also need access to UUID-based source filenames from presigned_url response
+	const response = await axios.post(lambdaEndpoint, { filenames });
+	return response?.data;
+}
