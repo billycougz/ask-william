@@ -11,7 +11,7 @@ install_dev:
 	@pip install -r requirements.txt -r requirements-dev.txt
 
 install_package: clean
-	@echo "Installing dependencies (excluding boto3)..."
+	@echo "Installing dependencies..."
 	@pip install --target $(STAGING_DIR) -r requirements.txt
 
 package: install_package

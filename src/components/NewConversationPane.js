@@ -21,11 +21,11 @@ export default function NewConversationPane({ onConversationStarted }) {
 
 	const handleBeginConversation = async () => {
 		setIsLoading(true);
-		const { id, summary, error } = await uploadAndSummarizeFiles(selectedFiles);
+		const { id, summary, error, extract_names } = await uploadAndSummarizeFiles(selectedFiles);
 		if (error) {
 			alert(error);
 		} else {
-			onConversationStarted({ id, summary, name: conversationName });
+			onConversationStarted({ id, summary, name: conversationName, extract_names });
 		}
 		setIsLoading(false);
 	};

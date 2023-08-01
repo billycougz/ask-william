@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use to stub responses
-const __MOCK__ = true;
+const __MOCK__ = false;
 
 const lambdaEndpoint = 'https://ce5siinwh3.execute-api.us-east-1.amazonaws.com/default/eli5ify';
 
@@ -14,15 +14,15 @@ function delay(ms) {
 	});
 }
 
-export async function askQuestion({ filenames, question }) {
+export async function askQuestion({ extract_names, question }) {
 	if (__MOCK__) {
 		await delay(500);
 		return { answer: 'Test' };
 	}
 	try {
-		const payload = { filenames, question };
+		const payload = { operation: 'generate-response', extract_names, question };
 		const response = await axios.post(lambdaEndpoint, payload);
-		return { answer: response.data.summary };
+		return response.data.response;
 	} catch (e) {
 		return { error: e.message };
 	}
@@ -35,26 +35,24 @@ export async function uploadAndSummarizeFiles(files) {
 	}
 	try {
 		const filenames = files.map(({ name }) => name);
-		const { presignedUrls, sourceFilenames } = await createPresignedUrls(filenames);
+		const presignedUrls = await createPresignedUrls(filenames);
 
 		// Upload files to S3
 		await Promise.all(
-			files.map(async (file, index) => {
-				const presignedUrl = presignedUrls[index];
-				await axios.put(presignedUrl, file);
+			Object.values(presignedUrls).map(async (presignedUrl, index) => {
+				await axios.put(presignedUrl, files[index], { headers: { 'Content-Type': files[index].type } });
 			})
 		);
 
-		const summary = await askQuestion({ sourceFilenames });
-		return { summary, sourceFilenames };
+		const answer = await askQuestion({ extract_names: Object.keys(presignedUrls) });
+		// ToDo: Update ID and store file names
+		return { summary: answer, id: Date.now(), extract_names: Object.keys(presignedUrls) };
 	} catch (error) {
 		console.error(error);
 	}
 }
 
 async function createPresignedUrls(filenames) {
-	// ToDo: Check params and response structure
-	// Also need access to UUID-based source filenames from presigned_url response
-	const response = await axios.post(lambdaEndpoint, { filenames });
-	return response?.data;
+	const response = await axios.post(lambdaEndpoint, { operation: 'generate-presigned-urls', filenames });
+	return response?.data?.urls;
 }

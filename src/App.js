@@ -41,23 +41,25 @@ const MainContent = styled.div`
 `;
 
 export default function App() {
-	const [{ id, name, exchanges }, setConversation] = useState({ id: null, exchanges: [] });
+	const [{ id, name, exchanges, extract_names }, setConversation] = useState({ id: null, exchanges: [] });
 	const [isLoading, setIsLoading] = useState(false);
 
 	const updateConversation = (newExchange) => {
 		const updatedConversation = {
 			id,
 			name,
+			extract_names,
 			exchanges: [...exchanges, newExchange],
 		};
 		setConversation(updatedConversation);
 		updateStoredConversations(updatedConversation);
 	};
 
-	const handleConversationStarted = ({ id, summary, name }) => {
+	const handleConversationStarted = ({ id, summary, name, extract_names }) => {
 		const conversation = {
 			id,
 			name,
+			extract_names,
 			exchanges: [
 				{
 					question: 'You started a new conversation.',
@@ -98,7 +100,7 @@ export default function App() {
 
 					{Boolean(exchanges.length) && <ConversationPane {...{ exchanges, isLoading }} />}
 
-					<SendMessagePane {...{ id, isLoading, setIsLoading, updateConversation }} />
+					<SendMessagePane {...{ id, extract_names, isLoading, setIsLoading, updateConversation }} />
 				</MainContent>
 			</MainContainer>
 		</AppContainer>

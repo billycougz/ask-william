@@ -14,20 +14,22 @@ const FixedContainer = styled.div`
 	box-sizing: border-box;
 `;
 
-export default function SendMessagePane({ id, isLoading, setIsLoading, updateConversation }) {
+export default function SendMessagePane({ id, extract_names, isLoading, setIsLoading, updateConversation }) {
 	const [question, setQuestion] = useState('');
 	const myRef = useRef(null);
 
 	const askWilliam = async () => {
 		if (question) {
 			setIsLoading(true);
-			const { answer, error } = await askQuestion({ id, question });
-			if (answer) {
-				updateConversation({ question, answer });
+			// ToDo: Update response structure, name, and handling
+			const summary = await askQuestion({ id, question, extract_names });
+			if (summary) {
+				updateConversation({ question, answer: summary });
 				setQuestion('');
 				// ToDo myRef.current.focus();
 			} else {
-				alert(error);
+				// ToDo
+				alert('error');
 			}
 			setIsLoading(false);
 		}
