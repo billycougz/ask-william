@@ -10,7 +10,7 @@ def create_response(statusCode, body={}):
     return {
         'statusCode': statusCode,
         'headers': {
-            'Access-Control-Allow-Origin': 'http://localhost:3000',
+            'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': '*',
             'Access-Control-Allow-Headers': '*'
         },
