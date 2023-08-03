@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import LoadingCursor from './LoadingCursor';
-import { uploadAndSummarizeFiles } from '../api';
-
-// Get presigned URL
-// Upload file
-// Store S3 ID
-// Poll for ready
-// Get summary
+import { initializeConversation } from '../api';
+import { getStoredConversations } from '../storage';
 
 const useCaseList = [
 	'Summarize this prescription',
@@ -18,16 +13,56 @@ export default function NewConversationPane({ onConversationStarted }) {
 	const [selectedFiles, setSelectedFiles] = useState(null);
 	const [conversationName, setConversationName] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState('');
+
+	const fileInputRef = useRef(null);
+
+	useEffect(() => {
+		if (selectedFiles) {
+			// Clear the error once the user has reselected a file
+			setError('');
+		}
+	}, [selectedFiles]);
 
 	const handleBeginConversation = async () => {
 		setIsLoading(true);
-		const { id, summary, error, extract_names } = await uploadAndSummarizeFiles(selectedFiles);
-		if (error) {
-			alert(error);
-		} else {
-			onConversationStarted({ id, summary, name: conversationName, extract_names });
+		try {
+			const { summary, s3Filenames } = await initializeConversation(selectedFiles);
+			onConversationStarted({ summary, name: conversationName, s3Filenames });
+		} catch (e) {
+			setSelectedFiles(null);
+			fileInputRef.current.value = '';
+			setConversationName('');
+			setError('There was an error. Please try again.');
+			console.error(e);
+		} finally {
+			setIsLoading(false);
 		}
-		setIsLoading(false);
+	};
+
+	const isReadyToBegin = isLoading || !conversationName || error;
+
+	const handleKeyDown = (event) => {
+		if (!isReadyToBegin && event.key === 'Enter' && !event.shiftKey) {
+			event.preventDefault();
+			handleBeginConversation();
+		}
+	};
+
+	const handleNameChange = (newName) => {
+		const existingConversations = getStoredConversations();
+		const sameName = existingConversations.find(({ name }) => name === newName);
+		if (sameName) {
+			const { archived } = sameName;
+			let message = 'The name must be unique and right now it matches an existing name.';
+			if (archived) {
+				message += ' Note the conversation with the matching name is archived.';
+			}
+			setError(message);
+		} else {
+			setError('');
+		}
+		setConversationName(newName);
 	};
 
 	return (
@@ -52,6 +87,7 @@ export default function NewConversationPane({ onConversationStarted }) {
 				</details>
 				<p />
 				<input
+					ref={fileInputRef}
 					type='file'
 					accept='image/jpeg,image/png,application/pdf'
 					multiple
@@ -66,9 +102,10 @@ export default function NewConversationPane({ onConversationStarted }) {
 							type='text'
 							disabled={isLoading}
 							value={conversationName}
-							onChange={(e) => setConversationName(e.target.value)}
+							onChange={(e) => handleNameChange(e.target.value)}
+							onKeyDown={handleKeyDown}
 						/>
-						<button onClick={handleBeginConversation} disabled={isLoading || !conversationName}>
+						<button onClick={handleBeginConversation} disabled={isReadyToBegin}>
 							Begin
 						</button>
 					</>
@@ -84,6 +121,8 @@ export default function NewConversationPane({ onConversationStarted }) {
 						<LoadingCursor />
 					</>
 				)}
+
+				{error && <p style={{ color: 'red' }}>[ ! ] {error}</p>}
 			</div>
 		</div>
 	);

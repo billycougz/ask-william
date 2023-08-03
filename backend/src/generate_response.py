@@ -19,10 +19,10 @@ def generate_response(question, extract_names):
     # ToDo: Update this content
     contextMessage = {
         "role": "system",
-        "content": "The context of this conversation is that a user has extracted text from a document with the intent of having you summarize or answer questions about the document."
+        "content": "I am a powerful AI assistant and I have the capability to generate informative answers based on the text provided to me. However, in some cases, the extracted text may not be sufficient to provide a satisfactory answer to your question. In such instances, I will use any relevant information from the extracted text as context and leverage my vast knowledge and language understanding to locate additional information and generate a more comprehensive and accurate response to your query. Rest assured that I will do my best to deliver a well-informed answer, even if the initial text is limited."
     }
 
-    prompt = "Answer this question using the text that follows: [Question] " + question if question else "Summarize the following text: "
+    prompt = "[Question] " + question if question else "Summarize the following text: "
 
     # Fetch all JSON files from S3 in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -45,7 +45,7 @@ def generate_response(question, extract_names):
     # Concatenate the content from all JSON files
     text_to_summarize = " ".join(message['content'] for message in messages)
 
-    message = prompt + " [Text] " + text_to_summarize
+    message = prompt + " [Extracted Text] " + text_to_summarize
 
     payload = {
         'model': "gpt-3.5-turbo",

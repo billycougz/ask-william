@@ -38,7 +38,7 @@ def lambda_handler(event, context):
 
         if operation == 'generate-presigned-urls':
             filenames = event_data['filenames']
-            response_body['urls'] = generate_presigned_urls(filenames)
+            response_body = generate_presigned_urls(filenames)
         elif operation == 'generate-extract':
             s3_event = event_data[0]['s3']
             object_key = s3_event['object']['key']

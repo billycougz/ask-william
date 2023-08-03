@@ -14,23 +14,22 @@ const FixedContainer = styled.div`
 	box-sizing: border-box;
 `;
 
-export default function SendMessagePane({ id, extract_names, isLoading, setIsLoading, updateConversation }) {
+export default function SendMessagePane({ activeConversation, isLoading, setIsLoading, updateConversation }) {
 	const [question, setQuestion] = useState('');
-	const myRef = useRef(null);
+	const [error, setError] = useState('');
+
+	const messageInputRef = useRef(null);
 
 	const askWilliam = async () => {
-		if (question) {
-			setIsLoading(true);
-			// ToDo: Update response structure, name, and handling
-			const summary = await askQuestion({ id, question, extract_names });
-			if (summary) {
-				updateConversation({ question, answer: summary });
-				setQuestion('');
-				// ToDo myRef.current.focus();
-			} else {
-				// ToDo
-				alert('error');
-			}
+		setIsLoading(true);
+		try {
+			const { answer } = await askQuestion(activeConversation.s3Filenames, question);
+			updateConversation({ question, answer });
+			setQuestion('');
+		} catch (e) {
+			setError('There was an error. Please try again.');
+			console.error(e);
+		} finally {
 			setIsLoading(false);
 		}
 	};
@@ -44,12 +43,13 @@ export default function SendMessagePane({ id, extract_names, isLoading, setIsLoa
 
 	return (
 		<FixedContainer>
+			{error && <p style={{ color: 'red' }}>[ ! ] {error}</p>}
 			<textarea
-				ref={myRef}
+				ref={messageInputRef}
 				style={{ width: 'calc(100% - 69px)' }}
-				placeholder={id ? 'Ask a question' : 'Start by uploading a document'}
+				placeholder='Ask a question'
 				onChange={(e) => setQuestion(e.target.value)}
-				disabled={!Boolean(id) || isLoading}
+				disabled={isLoading}
 				value={question}
 				onKeyDown={handleKeyDown}
 			></textarea>

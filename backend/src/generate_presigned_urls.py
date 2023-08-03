@@ -13,7 +13,7 @@ def _generate_presigned_url(filename):
     presigned_url = s3.generate_presigned_url(
         ClientMethod='put_object',
         Params={'Bucket': bucket_name, 'Key': object_key, 'ContentType': get_content_type(file_extension)},
-        ExpiresIn=3600  # Set the expiration time for the presigned URL (in seconds)
+        ExpiresIn=3600 
     )
 
     return presigned_url
@@ -27,9 +27,7 @@ def get_content_type(file_extension):
         '.pdf': 'application/pdf',
         '.txt': 'text/plain',
         '.html': 'text/html',
-        # Add more file extensions and their corresponding MIME types as needed
     }
-
     return mime_types.get(file_extension.lower(), 'application/octet-stream')
 
 def _replace_filename_with_uuid(filename):
@@ -52,10 +50,15 @@ def generate_presigned_urls(source_filenames):
             filename = future_to_url[future]
             try:
                 presigned_url = future.result()
-                presigned_urls[filename] = presigned_url
+                source_filename = source_filenames[uuid_filenames.index(filename)]
+                presigned_urls[source_filename] = {
+                    's3Filename': filename,
+                    'uploadUrl': presigned_url
+                }
             except Exception as e:
-                presigned_urls[filename] = f"Error generating presigned URL: {e}"
+                presigned_urls[filename] = {
+                    's3Filename': None,
+                    'uploadUrl': f"Error generating presigned URL: {e}"
+                }
 
-    # ToDo: Need to return UUID-based source filenames?
     return presigned_urls
-    
